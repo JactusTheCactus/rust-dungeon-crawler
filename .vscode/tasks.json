@@ -14,7 +14,6 @@
 			"label": "Build",
 			"type": "shell",
 			"command": "./.sh",
-			// "command": "source ~/.nvm/nvm.sh && nvm use 24 > /dev/null && ./.sh",
 			"group": {
 				"kind": "build",
 				"isDefault": true
