@@ -9,11 +9,11 @@ use {
 	},
 	utils::*,
 };
-fn make_dirs() -> Result<(), bool> {
+fn make_dirs() -> std::io::Result<()> {
 	for dir in [".state/items"] {
 		let _ = fs::create_dir_all(format!("{ROOT}/{dir}"));
 	}
-	return Ok::<(), bool>(());
+	Ok(())
 }
 fn main() {
 	if make_dirs().is_ok() {
@@ -25,7 +25,8 @@ fn main() {
 			std::io::stdin()
 				.read_line(&mut input)
 				.expect("That is an invalid command. Try again.");
-			let mut cmd = input.trim().split(" ").collect::<Vec<&str>>();
+			clear();
+			let mut cmd = input.trim().split_whitespace().collect::<Vec<&str>>();
 			match cmd[0] {
 				| "i" | "inventory" => inventory::run(&mut cmd),
 				| "q" | "quit" => {

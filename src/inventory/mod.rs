@@ -1,17 +1,17 @@
 mod add;
 mod drop;
 mod list;
+mod read_n;
 use {
 	add::main as add,
 	drop::main as drop,
 	list::main as list,
 };
 pub fn run(args: &mut Vec<&str>) {
-	let arg_len = args.len() - 1;
-	if arg_len > 0 {
+	if args.len() > 1 {
 		match args[1] {
-			| "a" | "add" => add(args, arg_len),
-			| "d" | "drop" => drop(args, arg_len),
+			| "a" | "add" => add(args),
+			| "d" | "drop" => drop(args),
 			| _ => println!("'{}' is an invalid argument. Try again.", args[1]),
 		}
 	} else {

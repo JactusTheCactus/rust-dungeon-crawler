@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+exec > project.md
+echo Thoughts?
+while read -r f; do
+	name=${f#src/}
+	ext=${f##*.}
+	content=$(<"$f")
+	printf '# `%s`\n```%s\n%s\n```\n' \
+		"$name" \
+		"$ext" \
+		"$content"
+done < <(find src -type f -name \*.rs | sort)
