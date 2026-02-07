@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+trap 'rm -rf dungeon' EXIT
+mode=
+case "$1" in
+	release)mode=release;;
+	*)mode=debug;;
+esac
+clear
+"./target/$mode/rust-dungeon-crawler"
