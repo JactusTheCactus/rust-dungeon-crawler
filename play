@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# trap 'rm -rf dungeon' EXIT
 mode=debug
 for i in "$@"; do
 	case "$i" in
