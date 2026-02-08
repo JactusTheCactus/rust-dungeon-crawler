@@ -7,4 +7,5 @@ for i in "$@"; do
 done
 cargo +nightly fmt
 cargo check
+cargo doc
 cargo build

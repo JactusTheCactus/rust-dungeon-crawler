@@ -1,6 +1,16 @@
+//! This is a dungeon crawler cli game written in Rust!
 mod inventory;
 mod utils;
 use {
+	crate::{
+		inventory::{
+			add::add,
+			check::check,
+			drop::drop,
+			list::list,
+		},
+		utils::ROOT,
+	},
 	clap::{
 		Parser,
 		Subcommand,
@@ -13,25 +23,18 @@ use {
 			FileBackedHistory,
 		},
 	},
-	crate::inventory::{
-		add::add,
-		check::check,
-		drop::drop,
-		list::list,
-	},
 	std::{
 		fs,
 		process::exit,
 	},
-	crate::utils::ROOT,
 };
 #[derive(Parser)]
+#[command(name = "")]
 struct Cli {
 	#[command(subcommand)]
 	command: Command,
 }
 #[derive(Subcommand)]
-#[command(name = "Dungeon Crawler")]
 enum Command {
 	#[command(subcommand)]
 	/// Inventory commands
@@ -41,15 +44,15 @@ enum Command {
 }
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Subcommand)]
 enum Inventory {
-	/// Add <item> to your inventory,
+	/// Add `<item>` to your inventory,
 	/// with an optional increase amount
 	/// (defaults to 1 if not specified)
 	Add { item: String, increase: Option<i32> },
-	/// Check if <item> is in your inventory,
+	/// Check if `<item>` is in your inventory,
 	/// with an optional target amount
 	/// (defaults to 1 if not specified)
 	Check { item: String, target: Option<i32> },
-	/// Remove <item> from your inventory,
+	/// Remove `<item>` from your inventory,
 	/// with an optional decrease amount
 	/// (defaults to 1 if not specified)
 	Drop { item: String, increase: Option<i32> },

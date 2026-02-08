@@ -2,3 +2,4 @@ imports_granularity = "One"
 imports_layout = "Vertical"
 hard_tabs = true
 group_imports = "StdExternalCrate"
+normalize_comments = true

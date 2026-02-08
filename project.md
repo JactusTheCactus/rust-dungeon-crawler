@@ -1,104 +1,85 @@
 Thoughts?
-# `help.rs`
-```rs
-struct Command {
-	cmd: String,
-	text: String,
-}
-fn opt(r#type: &str) -> String {
-	format!("with an optional {type} amount (defaults to 1 if not specified)")
-}
-pub fn main() -> Result<bool, ()> {
-	let i = "i[nventory]";
-	let help = &[
-		Command {
-			cmd: format!("{i} [l[ist]]"),
-			text: format!("List all items in to your inventory"),
-		},
-		Command {
-			cmd: format!("{i} a[dd] <item> [increase]"),
-			text: format!("Add <item> to your inventory, {}", opt("increase")),
-		},
-		Command {
-			cmd: format!("{i} c[heck] <item> [target]"),
-			text: format!("Check if <item> is in your inventory, {}", opt("target")),
-		},
-		Command {
-			cmd: format!("{i} d[rop] <item> [decrease]"),
-			text: format!("Remove <item> from your inventory, {}", opt("decrease")),
-		},
-	];
-	println!("Commands:");
-	for Command { cmd, text } in help {
-		println!("\t{cmd}\n\t\t{text}");
-	}
-	Ok(true)
-}
-```
 # `inventory/add.rs`
 ```rs
 use {
-	crate::{
-		inventory::read_n::main as read_n,
-		utils::*,
+	crate::utils::{
+		ROOT,
+		read_n,
 	},
 	std::fs,
 };
-pub fn main(item: &str, increase: Option<i32>) -> Result<bool, ()> {
+pub fn add(item: &str, increase: Option<i32>) -> bool {
+	let max = 0b1000000;
 	let path = format!("{ROOT}/.state/items/{item}");
-	let mut count = read_n(&path).expect("Invalid item count found");
+	let mut count = read_n(&path);
 	let mut increment = 1;
 	if let Some(i) = increase {
-		increment = i
+		if i > 0 {
+			increment = i
+		} else {
+			println!("Err: Increase must be a positive integer");
+			return false;
+		}
 	}
 	count += increment;
+	if count >= max {
+		count = max;
+		println!("This slot is full")
+	}
 	let _ = fs::write(&path, count.to_string());
 	println!("{item}×{count}");
-	Ok(true)
+	true
 }
 ```
 # `inventory/check.rs`
 ```rs
-use {
-	crate::{
-		ROOT,
-		inventory::read_n::main as read_n,
-	},
-	std::result::Result,
+use crate::{
+	ROOT,
+	utils::read_n,
 };
-pub fn main(item: &str, target: Option<i32>) -> Result<bool, ()> {
+pub fn check(item: &str, target: Option<i32>) -> bool {
 	let path = format!("{ROOT}/.state/items/{item}");
-	let count = read_n(&path).expect("Invalid item count found");
+	let count = read_n(&path);
 	let tar: i32;
 	if let Some(t) = target {
-		tar = t
+		if t > 0 {
+			tar = t
+		} else {
+			println!("Err: Target must be a positive integer");
+			return false;
+		}
 	} else {
 		tar = 1
 	}
 	if count >= tar {
 		println!("You have {item}×{tar} ({count})");
-		Ok(true)
+		true
 	} else {
 		println!("You do not have {item}×{tar} ({count})");
-		Ok(false)
+		false
 	}
 }
 ```
 # `inventory/drop.rs`
 ```rs
 use {
-	crate::{
-		inventory::read_n::main as read_n,
-		utils::*,
+	crate::utils::{
+		ROOT,
+		read_n,
 	},
 	std::fs,
 };
-pub fn main(item: &str, decrease: Option<i32>) -> Result<bool, ()> {
+pub fn drop(item: &str, decrease: Option<i32>) -> bool {
 	let path = format!("{ROOT}/.state/items/{item}");
-	let mut count = read_n(&path).expect("Invalid item count found");
+	let mut count = read_n(&path);
 	let mut decrement = 1;
 	if let Some(d) = decrease {
-		decrement = d
+		if d > 0 {
+			decrement = d
+		} else {
+			println!("Err: Decrease must be a positive integer");
+			return false;
+		}
 	}
 	if count <= decrement {
 		let _ = fs::remove_file(&path);
@@ -108,13 +89,13 @@ pub fn main(item: &str, decrease: Option<i32>) -> Result<bool, ()> {
 		let _ = fs::write(&path, count.to_string());
 	}
 	println!("{item}×{count}");
-	Ok(true)
+	true
 }
 ```
 # `inventory/list.rs`
 ```rs
 use {
-	crate::utils::*,
+	crate::utils::ROOT,
 	std::{
 		collections::{
 			BTreeSet,
@@ -123,7 +104,7 @@ use {
 		fs,
 	},
 };
-pub fn main() -> Result<bool, ()> {
+pub fn list() -> bool {
 	let path = format!("{ROOT}/.state/items");
 	let items = fs::read_dir(&path).unwrap();
 	let mut item_map: HashMap<String, i32> = HashMap::new();
@@ -145,138 +126,129 @@ pub fn main() -> Result<bool, ()> {
 			}
 		}
 	}
-	Ok(true)
+	true
 }
 ```
 # `inventory/mod.rs`
 ```rs
-mod add;
-mod check;
-mod drop;
-mod list;
-mod read_n;
-use {
-	add::main as add,
-	check::main as check,
-	drop::main as drop,
-	list::main as list,
-};
-pub fn run(args: &mut Vec<&str>) -> Result<bool, ()> {
-	if let Some(cmd) = args.get(1) {
-		let num_args = args.len() - 2;
-		match *cmd {
-			| "a" | "add" => {
-				if let Some(item) = args.get(2) {
-					if let Some(i) = args.get(3) {
-						add(item, Some(i.parse::<i32>().unwrap())).expect("Invalid inventory add");
-					} else {
-						add(item, None).expect("Invalid inventory add");
-					}
-				} else {
-					println!("'inventory add' takes 1-2 arguments (provided {num_args}).")
-				}
-			}
-			| "d" | "drop" => {
-				if let Some(item) = args.get(2) {
-					if let Some(i) = args.get(3) {
-						drop(item, Some(i.parse::<i32>().unwrap()))
-							.expect("Invalid inventory drop");
-					} else {
-						drop(item, None).expect("Invalid inventory drop");
-					}
-				} else {
-					println!("'inventory drop' takes 1-2 arguments (provided {num_args}).")
-				}
-			}
-			| "c" | "check" => {
-				if let Some(i) = args.get(2) {
-					if let Some(t) = args.get(3) {
-						let target = t.parse::<i32>().unwrap();
-						check(i, Some(target)).expect("Invalid inventory check");
-					} else {
-						check(i, None).expect("Invalid inventory check");
-					}
-				} else {
-					println!("'inventory check' takes 1-2 arguments (provided {num_args}).")
-				}
-			}
-			| "l" | "list" => {
-				list().expect("Invalid inventory list");
-			}
-			| _ => println!("'{cmd}' is an invalid argument. Try again."),
-		}
-	} else {
-		list().expect("Invalid inventory list");
-	}
-	Ok(true)
-}
-```
-# `inventory/read_n.rs`
-```rs
-use std::fs;
-pub fn main(path: &str) -> Result<i32, ()> {
-	let n = fs::read_to_string(&path)
-		.ok()
-		.and_then(|s| s.parse::<i32>().ok())
-		.unwrap_or(0);
-	Ok(n)
-}
+pub mod add;
+pub mod check;
+pub mod drop;
+pub mod list;
 ```
 # `main.rs`
 ```rs
-mod help;
 mod inventory;
 mod utils;
 use {
-	clearscreen::clear,
-	help::main as help,
+	crate::{
+		inventory::{
+			add::add,
+			check::check,
+			drop::drop,
+			list::list,
+		},
+		utils::ROOT,
+	},
+	clap::{
+		Parser,
+		Subcommand,
+	},
+	clap_repl::{
+		ClapEditor,
+		reedline::{
+			DefaultPrompt,
+			DefaultPromptSegment,
+			FileBackedHistory,
+		},
+	},
 	std::{
 		fs,
-		io::Write,
+		process::exit,
 	},
-	utils::*,
 };
-fn make_dirs() -> std::io::Result<()> {
+#[derive(Parser)]
+struct Cli {
+	#[command(subcommand)]
+	command: Command,
+}
+#[derive(Subcommand)]
+#[command(name = "Dungeon Crawler")]
+enum Command {
+	#[command(subcommand)]
+	/// Inventory commands
+	Inventory(Inventory),
+	/// Leave the dungeon
+	Quit,
+}
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Subcommand)]
+enum Inventory {
+	/// Add <item> to your inventory,
+	/// with an optional increase amount
+	/// (defaults to 1 if not specified)
+	Add { item: String, increase: Option<i32> },
+	/// Check if <item> is in your inventory,
+	/// with an optional target amount
+	/// (defaults to 1 if not specified)
+	Check { item: String, target: Option<i32> },
+	/// Remove <item> from your inventory,
+	/// with an optional decrease amount
+	/// (defaults to 1 if not specified)
+	Drop { item: String, increase: Option<i32> },
+	/// List all items in your inventory
+	List,
+}
+fn main() {
 	for dir in [".state/items"] {
 		let _ = fs::create_dir_all(format!("{ROOT}/{dir}"));
 	}
-	Ok(())
-}
-fn main() {
-	if make_dirs().is_ok() {
-		println!("Welcome to the dungeon!");
-		loop {
-			let mut input = String::new();
-			print!("> ");
-			let _ = std::io::stdout().flush();
-			std::io::stdin()
-				.read_line(&mut input)
-				.expect("That is an invalid command. Try again.");
-			clear().expect("Failed to clear screen...");
-			let mut cmd = input.trim().split_whitespace().collect::<Vec<&str>>();
-			if let Some(command) = cmd.get(0) {
-				match *command {
-					| "i" | "inventory" => {
-						let _ = inventory::run(&mut cmd);
-					}
-					| "q" | "quit" => {
-						break;
-					}
-					| _ => {
-						let _ = help();
-					}
-				}
-			} else {
-				let _ = help();
+	let prompt = DefaultPrompt {
+		left_prompt: DefaultPromptSegment::Basic("Dungeon".to_owned()),
+		..DefaultPrompt::default()
+	};
+	let rl = ClapEditor::<Cli>::builder()
+		.with_prompt(Box::new(prompt))
+		.with_editor_hook(|reed| {
+			reed.with_history(Box::new(
+				FileBackedHistory::with_file(10000, "/tmp/rust-dungeon-crawler-history".into())
+					.unwrap(),
+			))
+		})
+		.build();
+	rl.repl(|cmd| match cmd.command {
+		Command::Inventory(command) => match command {
+			Inventory::Add { item, increase } => {
+				add(&item, increase);
+			}
+			Inventory::Check { item, target } => {
+				check(&item, target);
+			}
+			Inventory::Drop { item, increase } => {
+				drop(&item, increase);
+			}
+			Inventory::List => {
+				list();
+			}
+		},
+		Command::Quit => {
+			if fs::remove_dir_all(ROOT).is_ok() {
+				println!("The dungeon collapsed!");
+				exit(0);
 			}
 		}
-	}
-	if fs::remove_dir_all(ROOT).is_ok() {
-		println!("The dungeon collapsed!");
-	}
+	});
 }
 ```
 # `utils.rs`
 ```rs
+use std::fs;
 pub const ROOT: &str = "dungeon";
+pub fn read_n(path: &str) -> i32 {
+	if let Some(str) = fs::read_to_string(&path).ok() {
+		if let Some(n) = str.parse::<i32>().ok() {
+			return n;
+		}
+	}
+	0
+}
 ```
