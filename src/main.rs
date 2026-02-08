@@ -2,6 +2,7 @@ mod help;
 mod inventory;
 mod utils;
 use {
+	clearscreen::clear,
 	help::main as help,
 	std::{
 		fs,
@@ -25,14 +26,22 @@ fn main() {
 			std::io::stdin()
 				.read_line(&mut input)
 				.expect("That is an invalid command. Try again.");
-			clear();
+			clear().expect("Failed to clear screen...");
 			let mut cmd = input.trim().split_whitespace().collect::<Vec<&str>>();
-			match cmd[0] {
-				| "i" | "inventory" => inventory::run(&mut cmd),
-				| "q" | "quit" => {
-					break;
+			if let Some(command) = cmd.get(0) {
+				match *command {
+					| "i" | "inventory" => {
+						let _ = inventory::run(&mut cmd);
+					}
+					| "q" | "quit" => {
+						break;
+					}
+					| _ => {
+						let _ = help();
+					}
 				}
-				| _ => help(),
+			} else {
+				let _ = help();
 			}
 		}
 	}

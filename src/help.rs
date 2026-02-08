@@ -1,29 +1,33 @@
 struct Command {
 	cmd: String,
-	text: &'static str,
+	text: String,
 }
-pub fn main() {
+fn opt(r#type: &str) -> String {
+	format!("with an optional {type} amount (defaults to 1 if not specified)")
+}
+pub fn main() -> Result<bool, ()> {
 	let i = "i[nventory]";
-	let help: &[Command] = &[
+	let help = &[
 		Command {
-			cmd: i.to_string(),
-			text: "list all items in to your inventory",
+			cmd: format!("{i} [l[ist]]"),
+			text: format!("List all items in to your inventory"),
 		},
 		Command {
-			cmd: i.to_string(),
-			text: "list all items in to your inventory",
+			cmd: format!("{i} a[dd] <item> [increase]"),
+			text: format!("Add <item> to your inventory, {}", opt("increase")),
 		},
 		Command {
-			cmd: format!("{i} a[dd] <item>"),
-			text: "add <item> to your inventory",
+			cmd: format!("{i} c[heck] <item> [target]"),
+			text: format!("Check if <item> is in your inventory, {}", opt("target")),
 		},
 		Command {
-			cmd: format!("{i} d[rop] <item>"),
-			text: "remove <item> from your inventory",
+			cmd: format!("{i} d[rop] <item> [decrease]"),
+			text: format!("Remove <item> from your inventory, {}", opt("decrease")),
 		},
 	];
 	println!("Commands:");
 	for Command { cmd, text } in help {
 		println!("\t{cmd}\n\t\t{text}");
 	}
+	Ok(true)
 }

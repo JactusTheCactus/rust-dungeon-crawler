@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-trap 'rm -rf dungeon' EXIT
-case "$1" in
-	release)mode=$1;;
-	*)mode=debug;;
-esac
+# trap 'rm -rf dungeon' EXIT
+mode=debug
+for i in "$@"; do
+	case "$i" in
+		backtrace) export RUST_BACKTRACE=1;;
+		full) export RUST_BACKTRACE=full;;
+		release)mode=$i;;
+	esac
+done
 clear
 "./target/$mode/rust-dungeon-crawler"

@@ -2,7 +2,7 @@ use {
 	crate::utils::*,
 	std::fs,
 };
-pub fn main() {
+pub fn main() -> Result<bool, ()> {
 	let path = format!("{ROOT}/.state/items");
 	let items = fs::read_dir(&path).unwrap();
 	let mut item_count = 0;
@@ -10,7 +10,7 @@ pub fn main() {
 		let item = i.unwrap().path();
 		let dir = format!("{}/", &path).to_string();
 		println!(
-			"{} x {}",
+			"{}×{}",
 			item.display().to_string().replace(&dir, ""),
 			fs::read_to_string(&item).unwrap().parse::<i32>().unwrap()
 		);
@@ -19,4 +19,5 @@ pub fn main() {
 	if item_count == 0 {
 		println!("Your inventory is empty...")
 	}
+	Ok(true)
 }

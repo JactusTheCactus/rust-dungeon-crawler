@@ -5,20 +5,15 @@ use {
 	},
 	std::fs,
 };
-pub fn main(args: &mut Vec<&str>) {
-	if args.len() == 3 {
-		if let Some(item) = args.get(2) {
-			let path = format!("{ROOT}/.state/items/{item}");
-			let mut count: i32 = read_n(&path);
-			count += 1;
-			let _ = fs::write(&path, count.to_string());
-			println!("{item} x {count}");
-		}
-	} else {
-		println!(
-			"'inventory {}' takes 1 argument (provided {}).",
-			args[1],
-			args.len() - 2
-		)
+pub fn main(item: &str, increase: Option<i32>) -> Result<bool, ()> {
+	let path = format!("{ROOT}/.state/items/{item}");
+	let mut count = read_n(&path).expect("Invalid item count found");
+	let mut increment = 1;
+	if let Some(i) = increase {
+		increment = i
 	}
+	count += increment;
+	let _ = fs::write(&path, count.to_string());
+	println!("{item}×{count}");
+	Ok(true)
 }
