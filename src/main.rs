@@ -13,7 +13,7 @@ use {
 			FileBackedHistory,
 		},
 	},
-	inventory::{
+	crate::inventory::{
 		add::add,
 		check::check,
 		drop::drop,
@@ -23,7 +23,7 @@ use {
 		fs,
 		process::exit,
 	},
-	utils::ROOT,
+	crate::utils::ROOT,
 };
 #[derive(Parser)]
 struct Cli {
