@@ -4,7 +4,7 @@ for i in "$@"; do
 	case "$i" in
 		backtrace) export RUST_BACKTRACE=1;;
 		full) export RUST_BACKTRACE=full;;
-		release)mode=$i;;
+		release) mode=$i;;
 	esac
 done
 clear
