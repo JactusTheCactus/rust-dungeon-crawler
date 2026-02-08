@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 trap 'rm -rf dungeon' EXIT
 case "$1" in
-	release)mode=release;;
+	release)mode=$1;;
 	*)mode=debug;;
 esac
 clear
