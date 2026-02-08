@@ -2,7 +2,7 @@
 set -euo pipefail
 for i in "$@"; do
 	case "$i" in
-		clean)cargo clean;;
+		clean) cargo clean ;;
 	esac
 done
 cargo +nightly fmt
