@@ -23,7 +23,7 @@ use {
 		fs,
 		process::exit,
 	},
-	utils::*,
+	utils::ROOT,
 };
 #[derive(Parser)]
 struct Cli {
@@ -56,51 +56,43 @@ enum Inventory {
 	/// List all items in your inventory
 	List,
 }
-fn make_dirs() -> std::io::Result<()> {
+fn main() {
 	for dir in [".state/items"] {
 		let _ = fs::create_dir_all(format!("{ROOT}/{dir}"));
 	}
-	Ok(())
-}
-fn main() {
-	if make_dirs().is_ok() {
-		let prompt = DefaultPrompt {
-			left_prompt: DefaultPromptSegment::Basic("Dungeon".to_owned()),
-			..DefaultPrompt::default()
-		};
-		let rl = ClapEditor::<Cli>::builder()
-			.with_prompt(Box::new(prompt))
-			.with_editor_hook(|reed| {
-				reed.with_history(Box::new(
-					FileBackedHistory::with_file(
-						10000,
-						"/tmp/clap-repl-simple-example-history".into(),
-					)
+	let prompt = DefaultPrompt {
+		left_prompt: DefaultPromptSegment::Basic("Dungeon".to_owned()),
+		..DefaultPrompt::default()
+	};
+	let rl = ClapEditor::<Cli>::builder()
+		.with_prompt(Box::new(prompt))
+		.with_editor_hook(|reed| {
+			reed.with_history(Box::new(
+				FileBackedHistory::with_file(10000, "/tmp/rust-dungeon-crawler-history".into())
 					.unwrap(),
-				))
-			})
-			.build();
-		rl.repl(|cmd| match cmd.command {
-			Command::Inventory(command) => match command {
-				Inventory::Add { item, increase } => {
-					add(&item, increase);
-				}
-				Inventory::Check { item, target } => {
-					check(&item, target);
-				}
-				Inventory::Drop { item, increase } => {
-					drop(&item, increase);
-				}
-				Inventory::List => {
-					list();
-				}
-			},
-			Command::Quit => {
-				if fs::remove_dir_all(ROOT).is_ok() {
-					println!("The dungeon collapsed!");
-					exit(0);
-				}
+			))
+		})
+		.build();
+	rl.repl(|cmd| match cmd.command {
+		Command::Inventory(command) => match command {
+			Inventory::Add { item, increase } => {
+				add(&item, increase);
 			}
-		});
-	}
+			Inventory::Check { item, target } => {
+				check(&item, target);
+			}
+			Inventory::Drop { item, increase } => {
+				drop(&item, increase);
+			}
+			Inventory::List => {
+				list();
+			}
+		},
+		Command::Quit => {
+			if fs::remove_dir_all(ROOT).is_ok() {
+				println!("The dungeon collapsed!");
+				exit(0);
+			}
+		}
+	});
 }
