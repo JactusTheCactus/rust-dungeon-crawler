@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-set -uo pipefail
-# cargo clean
+set -euo pipefail
+for i in "$@"; do
+	case "$i" in
+		clean)cargo clean;;
+	esac
+done
 cargo +nightly fmt
 cargo check
 cargo build

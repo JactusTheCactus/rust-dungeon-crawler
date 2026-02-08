@@ -1,16 +1,21 @@
 use {
-	crate::{
-		inventory::read_n::main as read_n,
-		utils::*,
+	crate::utils::{
+		read_n,
+		*,
 	},
 	std::fs,
 };
-pub fn main(item: &str, decrease: Option<i32>) -> Result<bool, ()> {
+pub fn drop(item: &str, decrease: Option<i32>) -> bool {
 	let path = format!("{ROOT}/.state/items/{item}");
-	let mut count = read_n(&path).expect("Invalid item count found");
+	let mut count = read_n(&path);
 	let mut decrement = 1;
 	if let Some(d) = decrease {
-		decrement = d
+		if d > 0 {
+			decrement = d
+		} else {
+			println!("Err: Decrease must be a positive integer");
+			return false;
+		}
 	}
 	if count <= decrement {
 		let _ = fs::remove_file(&path);
@@ -20,5 +25,5 @@ pub fn main(item: &str, decrease: Option<i32>) -> Result<bool, ()> {
 		let _ = fs::write(&path, count.to_string());
 	}
 	println!("{item}×{count}");
-	Ok(true)
+	true
 }

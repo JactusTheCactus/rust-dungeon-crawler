@@ -1,5 +1,4 @@
 imports_granularity = "One"
 imports_layout = "Vertical"
 hard_tabs = true
-match_arm_leading_pipes = "Always"
 group_imports = "StdExternalCrate"
