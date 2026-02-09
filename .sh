@@ -7,5 +7,7 @@ for i in "$@"; do
 done
 cargo +nightly fmt
 cargo check
-cargo doc
+cargo doc \
+	--no-deps #\
+	#--document-private-items
 cargo build

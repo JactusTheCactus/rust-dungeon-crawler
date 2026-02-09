@@ -3,3 +3,4 @@ imports_layout = "Vertical"
 hard_tabs = true
 group_imports = "StdExternalCrate"
 normalize_comments = true
+blank_lines_upper_bound = 0

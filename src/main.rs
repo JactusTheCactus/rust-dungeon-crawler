@@ -4,10 +4,10 @@ mod utils;
 use {
 	crate::{
 		inventory::{
-			add::add,
-			check::check,
-			drop::drop,
-			list::list,
+			add,
+			check,
+			drop,
+			list,
 		},
 		utils::ROOT,
 	},
@@ -30,11 +30,14 @@ use {
 };
 #[derive(Parser)]
 #[command(name = "")]
+/// The command-line-interface used throughout the game
 struct Cli {
 	#[command(subcommand)]
+	/// A root command
 	command: Command,
 }
 #[derive(Subcommand)]
+/// Root commands
 enum Command {
 	#[command(subcommand)]
 	/// Inventory commands
@@ -42,20 +45,21 @@ enum Command {
 	/// Leave the dungeon
 	Quit,
 }
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Subcommand)]
+#[derive(Subcommand)]
+/// Inventory commands
 enum Inventory {
 	/// Add `<item>` to your inventory,
 	/// with an optional increase amount
 	/// (defaults to 1 if not specified)
-	Add { item: String, increase: Option<i32> },
+	Add { item: String, increase: Option<u32> },
 	/// Check if `<item>` is in your inventory,
 	/// with an optional target amount
 	/// (defaults to 1 if not specified)
-	Check { item: String, target: Option<i32> },
+	Check { item: String, target: Option<u32> },
 	/// Remove `<item>` from your inventory,
 	/// with an optional decrease amount
 	/// (defaults to 1 if not specified)
-	Drop { item: String, increase: Option<i32> },
+	Drop { item: String, increase: Option<u32> },
 	/// List all items in your inventory
 	List,
 }

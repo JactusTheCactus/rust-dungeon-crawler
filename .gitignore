@@ -1,10 +1,1 @@
-/target/**
-!/target/doc/
-!/target/doc/crates.js
-!/target/doc/help.html
-!/target/doc/.lock
-!/target/doc/search-index.js
-!/target/doc/settings.html
-!/target/doc/src-files.js
-!/target/doc/rust_dungeon_crawler/
-!/target/doc/rust_dungeon_crawler/**
+/target
