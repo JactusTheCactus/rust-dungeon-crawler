@@ -1,6 +1,7 @@
 mod inventory;
 use {
 	crate::{
+		ROOT,
 		cli::inventory::{
 			Inventory,
 			Inventory::{
@@ -16,7 +17,6 @@ use {
 			drop,
 			list,
 		},
-		utils::ROOT,
 	},
 	std::{
 		fs::remove_dir_all,

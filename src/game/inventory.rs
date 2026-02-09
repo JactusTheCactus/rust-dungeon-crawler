@@ -1,5 +1,5 @@
 use {
-	crate::utils::{
+	crate::{
 		MAX,
 		ROOT,
 		cleanse,

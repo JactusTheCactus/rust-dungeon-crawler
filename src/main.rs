@@ -8,6 +8,7 @@ use {
 		},
 	},
 	rust_dungeon_crawler::{
+		ROOT,
 		cli::{
 			cli::Cli,
 			command::Command::{
@@ -19,7 +20,6 @@ use {
 			inventory,
 			quit,
 		},
-		utils::ROOT,
 	},
 	std::fs::create_dir_all,
 };

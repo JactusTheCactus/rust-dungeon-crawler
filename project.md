@@ -8,10 +8,9 @@ Thoughts?
 │   │   └── [49B] mod.rs
 │   ├── [4KB] game/
 │   │   ├── [2.1KB] inventory.rs
-│   │   └── [699B] mod.rs
-│   ├── [42B] lib.rs
-│   ├── [946B] main.rs
-│   └── [326B] utils.rs
+│   │   └── [692B] mod.rs
+│   ├── [353B] lib.rs
+│   └── [939B] main.rs
 └── [56B] TODO.md
 # `src/cli/cli.rs`
 ```rs
@@ -98,7 +97,7 @@ pub mod inventory;
 # `src/game/inventory.rs`
 ```rs
 use {
-	crate::utils::{
+	crate::{
 		MAX,
 		ROOT,
 		cleanse,
@@ -190,6 +189,7 @@ pub fn list() {
 mod inventory;
 use {
 	crate::{
+		ROOT,
 		cli::inventory::{
 			Inventory,
 			Inventory::{
@@ -205,7 +205,6 @@ use {
 			drop,
 			list,
 		},
-		utils::ROOT,
 	},
 	std::{
 		fs::remove_dir_all,
@@ -234,7 +233,20 @@ pub fn inventory(command: Inventory) {
 ```rs
 pub mod cli;
 pub mod game;
-pub mod utils;
+use std::fs::read_to_string;
+pub const ROOT: &str = "dungeon";
+pub const MAX: u8 = 64;
+pub fn read_n(path: &str) -> u8 {
+	if let Some(str) = read_to_string(&path).ok() {
+		if let Some(n) = str.parse::<u8>().ok() {
+			return n;
+		}
+	}
+	0
+}
+pub fn cleanse(input: String) -> String {
+	input.replace("/", "_").replace(".", "_")
+}
 ```
 # `src/main.rs`
 ```rs
@@ -248,6 +260,7 @@ use {
 		},
 	},
 	rust_dungeon_crawler::{
+		ROOT,
 		cli::{
 			cli::Cli,
 			command::Command::{
@@ -259,7 +272,6 @@ use {
 			inventory,
 			quit,
 		},
-		utils::ROOT,
 	},
 	std::fs::create_dir_all,
 };
@@ -286,23 +298,6 @@ fn main() {
 		Inventory(command) => inventory(command),
 		Quit => quit(),
 	});
-}
-```
-# `src/utils.rs`
-```rs
-use std::fs::read_to_string;
-pub const ROOT: &str = "dungeon";
-pub const MAX: u8 = 64;
-pub fn read_n(path: &str) -> u8 {
-	if let Some(str) = read_to_string(&path).ok() {
-		if let Some(n) = str.parse::<u8>().ok() {
-			return n;
-		}
-	}
-	0
-}
-pub fn cleanse(input: String) -> String {
-	input.replace("/", "_").replace(".", "_")
 }
 ```
 # `TODO.md`
