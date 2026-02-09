@@ -1,9 +1,0 @@
-    Checking rust-dungeon-crawler v0.1.0 (/home/devin/Projects/rust-dungeon-crawler)
-error: invalid variant for `#[command(subcommand)]`, expected a newtype variant
-  --> src/main.rs:35:2
-   |
-35 | /     #[command(subcommand)]
-36 | |     Inventory { command: Inventory },
-   | |____________________________________^
-
-error: could not compile `rust-dungeon-crawler` (bin "rust-dungeon-crawler") due to 1 previous error
