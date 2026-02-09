@@ -1,12 +1,28 @@
 #!/usr/bin/env bash
 exec > project.md
 echo Thoughts?
+tree \
+	--dirsfirst \
+	--noreport \
+	-P \*.rs -I target \
+	-P \*.md -I project.md \
+	-Fh \
+	| perl -pe 's|\s*(\d+)(?:\.0)?(\w)\]\s+|$1$2B] |g'
 while read -r f; do
-	name=${f#src/}
+	name=${f#./}
 	ext=${f##*.}
 	content=$(<"$f")
+	# shellcheck disable=SC2016
 	printf '# `%s`\n```%s\n%s\n```\n' \
 		"$name" \
 		"$ext" \
 		"$content"
-done < <(find src -type f -name \*.rs | sort)
+done < <(find . -type f \( \
+	\( \
+		-name \*.rs \
+		! -path ./target/\* \
+	\) \
+	-o \( \
+		-name \*.md ! -name project.md \
+	\) \
+\) | sort)

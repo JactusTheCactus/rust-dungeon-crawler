@@ -1,74 +1,36 @@
-//! This is a dungeon crawler cli game written in Rust!
-mod inventory;
-mod utils;
 use {
-	crate::{
-		inventory::{
-			add,
-			check,
-			drop,
-			list,
-		},
-		utils::ROOT,
-	},
-	clap::{
-		Parser,
-		Subcommand,
-	},
 	clap_repl::{
 		ClapEditor,
 		reedline::{
 			DefaultPrompt,
-			DefaultPromptSegment,
+			DefaultPromptSegment::Basic,
 			FileBackedHistory,
 		},
 	},
-	std::{
-		fs,
-		process::exit,
+	rust_dungeon_crawler::{
+		cli::{
+			cli::Cli,
+			command::Command::{
+				Inventory,
+				Quit,
+			},
+		},
+		game::{
+			inventory,
+			quit,
+		},
+		utils::ROOT,
 	},
+	std::fs::create_dir_all,
 };
-#[derive(Parser)]
-#[command(name = "")]
-/// The command-line-interface used throughout the game
-struct Cli {
-	#[command(subcommand)]
-	/// A root command
-	command: Command,
-}
-#[derive(Subcommand)]
-/// Root commands
-enum Command {
-	#[command(subcommand)]
-	/// Inventory commands
-	Inventory(Inventory),
-	/// Leave the dungeon
-	Quit,
-}
-#[derive(Subcommand)]
-/// Inventory commands
-enum Inventory {
-	/// Add `<item>` to your inventory,
-	/// with an optional increase amount
-	/// (defaults to 1 if not specified)
-	Add { item: String, increase: Option<u32> },
-	/// Check if `<item>` is in your inventory,
-	/// with an optional target amount
-	/// (defaults to 1 if not specified)
-	Check { item: String, target: Option<u32> },
-	/// Remove `<item>` from your inventory,
-	/// with an optional decrease amount
-	/// (defaults to 1 if not specified)
-	Drop { item: String, increase: Option<u32> },
-	/// List all items in your inventory
-	List,
-}
 fn main() {
 	for dir in [".state/items"] {
-		let _ = fs::create_dir_all(format!("{ROOT}/{dir}"));
+		if let Err(e) = create_dir_all(format!("{ROOT}/{dir}")) {
+			eprintln!("Failed to create directory: {e}")
+		}
 	}
 	let prompt = DefaultPrompt {
-		left_prompt: DefaultPromptSegment::Basic("Dungeon".to_owned()),
+		left_prompt: Basic("Dungeon".to_string()),
 		..DefaultPrompt::default()
 	};
 	let rl = ClapEditor::<Cli>::builder()
@@ -81,25 +43,7 @@ fn main() {
 		})
 		.build();
 	rl.repl(|cmd| match cmd.command {
-		Command::Inventory(command) => match command {
-			Inventory::Add { item, increase } => {
-				add(&item, increase);
-			}
-			Inventory::Check { item, target } => {
-				check(&item, target);
-			}
-			Inventory::Drop { item, increase } => {
-				drop(&item, increase);
-			}
-			Inventory::List => {
-				list();
-			}
-		},
-		Command::Quit => {
-			if fs::remove_dir_all(ROOT).is_ok() {
-				println!("The dungeon collapsed!");
-				exit(0);
-			}
-		}
+		Inventory(command) => inventory(command),
+		Quit => quit(),
 	});
 }

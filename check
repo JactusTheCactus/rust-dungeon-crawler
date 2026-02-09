@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+scripts=(
+	.sh
+	check
+	play
+	project
+)
+shellcheck "${scripts[@]}"

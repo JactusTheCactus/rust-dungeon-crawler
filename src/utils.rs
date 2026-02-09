@@ -1,13 +1,14 @@
-//! Project-wide utilities
-use std::fs;
-/// The root of the game save
+use std::fs::read_to_string;
 pub const ROOT: &str = "dungeon";
-/// Read the contents of a file as a 32-bit unsigned integer
-pub fn read_n(path: &str) -> u32 {
-	if let Some(str) = fs::read_to_string(&path).ok() {
-		if let Some(n) = str.parse::<u32>().ok() {
+pub const MAX: u8 = 64;
+pub fn read_n(path: &str) -> u8 {
+	if let Some(str) = read_to_string(&path).ok() {
+		if let Some(n) = str.parse::<u8>().ok() {
 			return n;
 		}
 	}
 	0
+}
+pub fn cleanse(input: String) -> String {
+	input.replace("/", "_").replace(".", "_")
 }

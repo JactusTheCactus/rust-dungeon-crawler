@@ -2,10 +2,15 @@
 set -euo pipefail
 log=
 clean=
-for i in "$@"; do
-	case "$i" in
+for i in "$@"
+	do case "$i" in
 		clean) clean=0 ;;
-		log) log=.log ;;
+		log|*.log)
+			if [[ $i == log ]]
+				then log=.log
+				else log=$i
+			fi
+		;;
 	esac
 done
 main() {
@@ -14,10 +19,12 @@ main() {
 	fi
 	cargo +nightly fmt
 	cargo check
-	cargo doc --no-deps
 	cargo build
 }
-if [[ -z $log ]]
-	then main
-	else main &> $log
+rm -rf logs
+mkdir -p logs
+if [[ -n $log ]]
+	then main &> "logs/$log"
+	else main
 fi
+find . -empty ! -path './target/*' -delete
