@@ -1,3 +1,3 @@
 pub mod cli;
-pub mod command;
-pub(super) mod inventory;
+pub mod cmd;
+pub(super) mod inv;

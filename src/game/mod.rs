@@ -1,17 +1,17 @@
-mod inventory;
+mod inv;
 use {
 	crate::{
 		ROOT,
-		cli::inventory::{
-			Inventory,
-			Inventory::{
+		cli::inv::{
+			InvCmd,
+			InvCmd::{
 				Add,
 				Check,
 				Drop,
 				List,
 			},
 		},
-		game::inventory::{
+		game::inv::{
 			add,
 			check,
 			drop,
@@ -32,7 +32,7 @@ pub fn quit() {
 		exit(1_i32)
 	}
 }
-pub fn inventory(command: Inventory) {
+pub fn inventory(command: InvCmd) {
 	match command {
 		Add { item, increase } => add(item, increase),
 		Check { item, target } => check(item, target),

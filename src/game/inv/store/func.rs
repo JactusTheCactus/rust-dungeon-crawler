@@ -2,7 +2,7 @@ use {
 	crate::{
 		ROOT,
 		cleanse,
-		game::inventory::store::{
+		game::inv::store::{
 			InventoryStore,
 			Item,
 			get_item_path,
@@ -15,24 +15,23 @@ use {
 			remove_file,
 			write,
 		},
-		path::Path,
+		path::{
+			Path,
+			PathBuf,
+		},
 	},
 };
-pub(super) fn get(mut item: String) -> Item {
-	item = cleanse(item);
-	let path = &Path::new(ROOT)
-		.join(".state")
-		.join("items")
-		.join(&cleanse(item.to_string()));
-	let count = read_n(path);
+pub(super) fn get(item: String) -> Item {
+	let path: PathBuf = get_item_path(&item);
+	let count: u8 = read_n(&path);
 	return Item {
-		id: item.to_string(),
+		id: cleanse(item),
 		count: count,
-		path: path.to_path_buf(),
+		path: path,
 	};
 }
 pub(super) fn set(item: &String, count: u8) {
-	let path = get_item_path(&item);
+	let path: PathBuf = get_item_path(&item);
 	if let Err(e) = write(&path, count.to_string()) {
 		eprintln!("Failed to write to file: {e}");
 	}
@@ -48,7 +47,7 @@ pub(super) fn remove(item: String) {
 	}
 }
 pub(super) fn list() -> Vec<(String, u8)> {
-	let path = Path::new(ROOT).join(".state").join("items");
+	let path: PathBuf = Path::new(ROOT).join(".state").join("items");
 	let mut item_vec: Vec<(String, u8)> = Vec::new();
 	if let Ok(items) = read_dir(&path) {
 		for i in items {

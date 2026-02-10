@@ -1,5 +1,5 @@
 use {
-	crate::cli::inventory::Inventory,
+	crate::cli::inv::InvCmd,
 	clap::Subcommand,
 };
 #[derive(Subcommand)]
@@ -8,7 +8,7 @@ pub enum Command {
 	#[command(subcommand)]
 	#[command(alias = "i")]
 	/// Inventory commands
-	Inventory(Inventory),
+	Inventory(InvCmd),
 	#[command(alias = "q")]
 	/// Leave the dungeon
 	Quit,

@@ -4,11 +4,11 @@
 ├── src/
 │   ├── cli/
 │   │   ├── cli.rs
-│   │   ├── command.rs
-│   │   ├── inventory.rs
+│   │   ├── cmd.rs
+│   │   ├── inv.rs
 │   │   └── mod.rs
 │   ├── game/
-│   │   ├── inventory/
+│   │   ├── inv/
 │   │   │   ├── store/
 │   │   │   │   ├── func.rs
 │   │   │   │   └── mod.rs
@@ -21,7 +21,7 @@
 ## `src/cli/cli.rs`
 ```rs
 use {
-	crate::cli::command::Command,
+	crate::cli::cmd::Command,
 	clap::Parser,
 };
 #[derive(Parser)]
@@ -33,10 +33,10 @@ pub struct Cli {
 	pub command: Command,
 }
 ```
-## `src/cli/command.rs`
+## `src/cli/cmd.rs`
 ```rs
 use {
-	crate::cli::inventory::Inventory,
+	crate::cli::inv::InvCmd,
 	clap::Subcommand,
 };
 #[derive(Subcommand)]
@@ -45,17 +45,20 @@ pub enum Command {
 	#[command(subcommand)]
 	#[command(alias = "i")]
 	/// Inventory commands
-	Inventory(Inventory),
+	Inventory(InvCmd),
 	#[command(alias = "q")]
 	/// Leave the dungeon
 	Quit,
 }
 ```
-## `src/cli/inventory.rs`
+## `src/cli/inv.rs`
 ```rs
-use clap::Subcommand;
+use clap::{
+	Subcommand,
+	value_parser,
+};
 #[derive(Subcommand)]
-pub enum Inventory {
+pub enum InvCmd {
 	/// Add items to your inventory,
 	/// with an optional increase amount
 	/// (defaults to 1)
@@ -64,7 +67,7 @@ pub enum Inventory {
 		/// The item(s) you want to add to your inventory
 		item: String,
 		/// The amount of items to add (defaults to 1)
-		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
+		#[arg(default_value_t = 1_u8, value_parser = value_parser!(u8).range(1_i64..))]
 		increase: u8,
 	},
 	/// Check if an item is in your inventory,
@@ -75,7 +78,7 @@ pub enum Inventory {
 		/// The item(s) you want to check your inventory for
 		item: String,
 		/// The amount of items to check (defaults to 1)
-		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
+		#[arg(default_value_t = 1_u8, value_parser = value_parser!(u8).range(1_i64..))]
 		target: u8,
 	},
 	/// Remove items from your inventory,
@@ -86,7 +89,7 @@ pub enum Inventory {
 		/// The item(s) you want to drop from your inventory
 		item: String,
 		/// The amount of items to drop (defaults to 1)
-		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
+		#[arg(default_value_t = 1_u8, value_parser = value_parser!(u8).range(1_i64..))]
 		decrease: u8,
 	},
 	/// List all items in your inventory
@@ -97,33 +100,36 @@ pub enum Inventory {
 ## `src/cli/mod.rs`
 ```rs
 pub mod cli;
-pub mod command;
-pub(super) mod inventory;
+pub mod cmd;
+pub(super) mod inv;
 ```
-## `src/game/inventory/mod.rs`
+## `src/game/inv/mod.rs`
 ```rs
 mod store;
-use crate::{
-	cleanse,
-	game::inventory::store::{
-		InventoryStore,
-		Item,
-		get_item_path,
+use {
+	crate::{
+		cleanse,
+		game::inv::store::{
+			InventoryStore,
+			Item,
+			get_item_path,
+		},
+		read_n,
 	},
-	read_n,
+	std::path::PathBuf,
 };
 pub(super) fn add(mut item: String, increase: u8) {
 	let max: u8 = 1 << 6;
-	item = cleanse(item);
-	let path = get_item_path(&item);
+	let path: PathBuf = get_item_path(&item);
 	let mut count: u8 = read_n(&path);
-	let old = count;
+	let old: u8 = count;
 	count = (old + increase).min(max);
 	if old == max {
 		println!("This slot is full");
 	} else if count == max {
 		println!("This slot is now full");
 	}
+	item = cleanse(item);
 	InventoryStore {}.set(&item, count);
 	println!("{item}×{count}");
 }
@@ -136,7 +142,7 @@ pub(super) fn check(item: String, target: u8) {
 	}
 }
 pub(super) fn drop(item: String, decrease: u8) {
-	let inv = InventoryStore {};
+	let inv: InventoryStore = InventoryStore {};
 	let Item {
 		id,
 		mut count,
@@ -164,13 +170,13 @@ pub(super) fn list() {
 	}
 }
 ```
-## `src/game/inventory/store/func.rs`
+## `src/game/inv/store/func.rs`
 ```rs
 use {
 	crate::{
 		ROOT,
 		cleanse,
-		game::inventory::store::{
+		game::inv::store::{
 			InventoryStore,
 			Item,
 			get_item_path,
@@ -183,24 +189,23 @@ use {
 			remove_file,
 			write,
 		},
-		path::Path,
+		path::{
+			Path,
+			PathBuf,
+		},
 	},
 };
-pub(super) fn get(mut item: String) -> Item {
-	item = cleanse(item);
-	let path = &Path::new(ROOT)
-		.join(".state")
-		.join("items")
-		.join(&cleanse(item.to_string()));
-	let count = read_n(path);
+pub(super) fn get(item: String) -> Item {
+	let path: PathBuf = get_item_path(&item);
+	let count: u8 = read_n(&path);
 	return Item {
-		id: item.to_string(),
+		id: cleanse(item),
 		count: count,
-		path: path.to_path_buf(),
+		path: path,
 	};
 }
 pub(super) fn set(item: &String, count: u8) {
-	let path = get_item_path(&item);
+	let path: PathBuf = get_item_path(&item);
 	if let Err(e) = write(&path, count.to_string()) {
 		eprintln!("Failed to write to file: {e}");
 	}
@@ -216,7 +221,7 @@ pub(super) fn remove(item: String) {
 	}
 }
 pub(super) fn list() -> Vec<(String, u8)> {
-	let path = Path::new(ROOT).join(".state").join("items");
+	let path: PathBuf = Path::new(ROOT).join(".state").join("items");
 	let mut item_vec: Vec<(String, u8)> = Vec::new();
 	if let Ok(items) = read_dir(&path) {
 		for i in items {
@@ -232,13 +237,14 @@ pub(super) fn list() -> Vec<(String, u8)> {
 	item_vec
 }
 ```
-## `src/game/inventory/store/mod.rs`
+## `src/game/inv/store/mod.rs`
 ```rs
 mod func;
 use {
 	crate::{
 		ROOT,
-		game::inventory::store::func::{
+		cleanse,
+		game::inv::store::func::{
 			get,
 			list,
 			remove,
@@ -251,7 +257,10 @@ use {
 	},
 };
 pub(super) fn get_item_path(item: &String) -> PathBuf {
-	Path::new(ROOT).join(".state/items").join(&item)
+	Path::new(ROOT)
+		.join(".state")
+		.join("items")
+		.join(&cleanse(item.to_string()))
 }
 pub(super) struct Item {
 	pub(super) id: String,
@@ -276,20 +285,20 @@ impl InventoryStore {
 ```
 ## `src/game/mod.rs`
 ```rs
-mod inventory;
+mod inv;
 use {
 	crate::{
 		ROOT,
-		cli::inventory::{
-			Inventory,
-			Inventory::{
+		cli::inv::{
+			InvCmd,
+			InvCmd::{
 				Add,
 				Check,
 				Drop,
 				List,
 			},
 		},
-		game::inventory::{
+		game::inv::{
 			add,
 			check,
 			drop,
@@ -310,7 +319,7 @@ pub fn quit() {
 		exit(1_i32)
 	}
 }
-pub fn inventory(command: Inventory) {
+pub fn inventory(command: InvCmd) {
 	match command {
 		Add { item, increase } => add(item, increase),
 		Check { item, target } => check(item, target),
@@ -335,7 +344,7 @@ pub const ROOT: &str = "dungeon";
 pub(crate) fn read_n(path: &Path) -> u8 {
 	read_to_string(path)
 		.ok()
-		.and_then(|s| s.parse().ok())
+		.and_then(|s: String| s.parse().ok())
 		.unwrap_or(0)
 }
 static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[/.\s]").unwrap());
@@ -361,7 +370,7 @@ use {
 		ROOT,
 		cli::{
 			cli::Cli,
-			command::Command::{
+			cmd::Command::{
 				Inventory,
 				Quit,
 			},
@@ -394,7 +403,7 @@ fn main() {
 			))
 		})
 		.build()
-		.repl(|cmd| match cmd.command {
+		.repl(|cmd: Cli| match cmd.command {
 			Inventory(command) => inventory(command),
 			Quit => quit(),
 		});
@@ -402,5 +411,34 @@ fn main() {
 ```
 ## `TODO.md`
 ```md
-- Instead of files (à la Unix), use `RON` for state
+- Use `Ron` for state
+	`Ron` struct file per-file (à la Unix) for metadata,
+		instead of raw text for item count.
+	- e.g. Bow×1, Arrow×50:
+		- Raw
+			- `./bow`
+				```txt
+				1
+				```
+			- `./arrow`
+				```txt
+				50
+				```
+		- `Ron`
+			- `./bow.ron`
+				```rs
+				Item(
+					name: "Bow",
+					description: "Slay your enemies from afar!",
+					count: 1_u8,
+				)
+				```
+			- `./arrow.ron`
+				```rs
+				Item(
+					name: "Arrow",
+					description: "Pointy!",
+					count: 50_u8,
+				)
+				```
 ```

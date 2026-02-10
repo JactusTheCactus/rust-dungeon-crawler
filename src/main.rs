@@ -11,7 +11,7 @@ use {
 		ROOT,
 		cli::{
 			cli::Cli,
-			command::Command::{
+			cmd::Command::{
 				Inventory,
 				Quit,
 			},
@@ -44,7 +44,7 @@ fn main() {
 			))
 		})
 		.build()
-		.repl(|cmd| match cmd.command {
+		.repl(|cmd: Cli| match cmd.command {
 			Inventory(command) => inventory(command),
 			Quit => quit(),
 		});

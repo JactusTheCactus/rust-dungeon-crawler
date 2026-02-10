@@ -2,7 +2,8 @@ mod func;
 use {
 	crate::{
 		ROOT,
-		game::inventory::store::func::{
+		cleanse,
+		game::inv::store::func::{
 			get,
 			list,
 			remove,
@@ -15,7 +16,10 @@ use {
 	},
 };
 pub(super) fn get_item_path(item: &String) -> PathBuf {
-	Path::new(ROOT).join(".state/items").join(&item)
+	Path::new(ROOT)
+		.join(".state")
+		.join("items")
+		.join(&cleanse(item.to_string()))
 }
 pub(super) struct Item {
 	pub(super) id: String,

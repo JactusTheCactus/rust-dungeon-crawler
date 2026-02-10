@@ -12,7 +12,7 @@ pub const ROOT: &str = "dungeon";
 pub(crate) fn read_n(path: &Path) -> u8 {
 	read_to_string(path)
 		.ok()
-		.and_then(|s| s.parse().ok())
+		.and_then(|s: String| s.parse().ok())
 		.unwrap_or(0)
 }
 static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[/.\s]").unwrap());

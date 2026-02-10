@@ -1,25 +1,28 @@
 mod store;
-use crate::{
-	cleanse,
-	game::inventory::store::{
-		InventoryStore,
-		Item,
-		get_item_path,
+use {
+	crate::{
+		cleanse,
+		game::inv::store::{
+			InventoryStore,
+			Item,
+			get_item_path,
+		},
+		read_n,
 	},
-	read_n,
+	std::path::PathBuf,
 };
 pub(super) fn add(mut item: String, increase: u8) {
 	let max: u8 = 1 << 6;
-	item = cleanse(item);
-	let path = get_item_path(&item);
+	let path: PathBuf = get_item_path(&item);
 	let mut count: u8 = read_n(&path);
-	let old = count;
+	let old: u8 = count;
 	count = (old + increase).min(max);
 	if old == max {
 		println!("This slot is full");
 	} else if count == max {
 		println!("This slot is now full");
 	}
+	item = cleanse(item);
 	InventoryStore {}.set(&item, count);
 	println!("{item}×{count}");
 }
@@ -32,7 +35,7 @@ pub(super) fn check(item: String, target: u8) {
 	}
 }
 pub(super) fn drop(item: String, decrease: u8) {
-	let inv = InventoryStore {};
+	let inv: InventoryStore = InventoryStore {};
 	let Item {
 		id,
 		mut count,
