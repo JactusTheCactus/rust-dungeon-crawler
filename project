@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 exec > project.md
-echo Thoughts?
-tree \
-	--dirsfirst \
-	--noreport \
-	-P \*.rs -I target \
-	-P \*.md -I project.md \
-	-Fh \
-	| perl -pe 's|\s*(\d+)(?:\.0)?(\w)\]\s+|$1$2B] |g'
+printf '# %s\n' \
+	"Thoughts?"
+# shellcheck disable=SC2016
+printf '```tree\n%s\n```\n' \
+	"$(tree \
+		--dirsfirst \
+		--noreport \
+		-P \*.rs -I target \
+		-P \*.md -I project.md \
+		-F
+	)"
 while read -r f; do
 	name=${f#./}
 	ext=${f##*.}
 	content=$(<"$f")
 	# shellcheck disable=SC2016
-	printf '# `%s`\n```%s\n%s\n```\n' \
+	printf '## `%s`\n```%s\n%s\n```\n' \
 		"$name" \
 		"$ext" \
 		"$content"

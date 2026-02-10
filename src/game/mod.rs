@@ -26,10 +26,10 @@ use {
 pub fn quit() {
 	if remove_dir_all(ROOT).is_ok() {
 		println!("You escaped the dungeon before it collapsed!");
-		exit(0);
+		exit(0_i32);
 	} else {
 		eprintln!("The dungeon collapsed with you inside...");
-		exit(1)
+		exit(1_i32)
 	}
 }
 pub fn inventory(command: Inventory) {

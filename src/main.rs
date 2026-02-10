@@ -37,8 +37,11 @@ fn main() {
 		.with_prompt(Box::new(prompt))
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
-				FileBackedHistory::with_file(10000, "/tmp/rust-dungeon-crawler-history".into())
-					.unwrap(),
+				FileBackedHistory::with_file(
+					10000_usize,
+					"/tmp/rust-dungeon-crawler-history".into(),
+				)
+				.unwrap(),
 			))
 		})
 		.build();

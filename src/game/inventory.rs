@@ -46,13 +46,13 @@ pub fn drop(mut item: String, decrease: u8) {
 	item = cleanse(item);
 	let path = Path::new(ROOT).join(".state/items").join(&item);
 	let mut count = read_n(&path.display().to_string());
-	if count == 0 {
+	if count == 0_u8 {
 		println!("You have nothing to drop");
 	} else if count <= decrease {
 		if let Err(e) = remove_file(&path) {
 			eprintln!("Failed to remove file: {e}")
 		}
-		count = 0;
+		count = 0_u8;
 	} else {
 		count -= decrease;
 		if let Err(e) = write(&path, count.to_string()) {
@@ -67,12 +67,9 @@ pub fn list() {
 		let mut item_vec: Vec<(String, u8)> = Vec::new();
 		for i in items {
 			if let Ok(entry) = i {
-				let item = entry.path();
-				let dir = format!("{}/", &path.display().to_string()).to_string();
-				item_vec.push((
-					item.display().to_string().replace(&dir, ""),
-					read_n(&item.display().to_string()),
-				));
+				let item = entry.path().display().to_string();
+				let file = entry.file_name().to_string_lossy().into_owned();
+				item_vec.push((file, read_n(&item)));
 			}
 		}
 		item_vec.sort_by(|a, b| a.0.cmp(&b.0));

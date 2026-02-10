@@ -1,18 +1,20 @@
-Thoughts?
-[4KB] ./
-├── [4KB] src/
-│   ├── [4KB] cli/
-│   │   ├── [196B] cli.rs
-│   │   ├── [270B] command.rs
-│   │   ├── [1.2KB] inventory.rs
-│   │   └── [49B] mod.rs
-│   ├── [4KB] game/
-│   │   ├── [2.1KB] inventory.rs
-│   │   └── [692B] mod.rs
-│   ├── [353B] lib.rs
-│   └── [939B] main.rs
-└── [56B] TODO.md
-# `src/cli/cli.rs`
+# Thoughts?
+```tree
+./
+├── src/
+│   ├── cli/
+│   │   ├── cli.rs
+│   │   ├── command.rs
+│   │   ├── inventory.rs
+│   │   └── mod.rs
+│   ├── game/
+│   │   ├── inventory.rs
+│   │   └── mod.rs
+│   ├── lib.rs
+│   └── main.rs
+└── TODO.md
+```
+## `src/cli/cli.rs`
 ```rs
 use {
 	crate::cli::command::Command,
@@ -27,7 +29,7 @@ pub struct Cli {
 	pub command: Command,
 }
 ```
-# `src/cli/command.rs`
+## `src/cli/command.rs`
 ```rs
 use {
 	crate::cli::inventory::Inventory,
@@ -45,7 +47,7 @@ pub enum Command {
 	Quit,
 }
 ```
-# `src/cli/inventory.rs`
+## `src/cli/inventory.rs`
 ```rs
 use clap::Subcommand;
 #[derive(Subcommand)]
@@ -58,7 +60,7 @@ pub enum Inventory {
 		/// The item(s) you want to add to your inventory
 		item: String,
 		/// The amount of items to add (defaults to 1)
-		#[arg(default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..))]
+		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
 		increase: u8,
 	},
 	/// Check if an item is in your inventory,
@@ -69,7 +71,7 @@ pub enum Inventory {
 		/// The item(s) you want to check your inventory for
 		item: String,
 		/// The amount of items to check (defaults to 1)
-		#[arg(default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..))]
+		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
 		target: u8,
 	},
 	/// Remove items from your inventory,
@@ -79,8 +81,8 @@ pub enum Inventory {
 	Drop {
 		/// The item(s) you want to drop from your inventory
 		item: String,
-		/// The amount of items to add (defaults to 1)
-		#[arg(default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..))]
+		/// The amount of items to drop (defaults to 1)
+		#[arg(default_value_t = 1_u8, value_parser = clap::value_parser!(u8).range(1_i64..))]
 		decrease: u8,
 	},
 	/// List all items in your inventory
@@ -88,13 +90,13 @@ pub enum Inventory {
 	List,
 }
 ```
-# `src/cli/mod.rs`
+## `src/cli/mod.rs`
 ```rs
 pub mod cli;
 pub mod command;
 pub mod inventory;
 ```
-# `src/game/inventory.rs`
+## `src/game/inventory.rs`
 ```rs
 use {
 	crate::{
@@ -144,13 +146,13 @@ pub fn drop(mut item: String, decrease: u8) {
 	item = cleanse(item);
 	let path = Path::new(ROOT).join(".state/items").join(&item);
 	let mut count = read_n(&path.display().to_string());
-	if count == 0 {
+	if count == 0_u8 {
 		println!("You have nothing to drop");
 	} else if count <= decrease {
 		if let Err(e) = remove_file(&path) {
 			eprintln!("Failed to remove file: {e}")
 		}
-		count = 0;
+		count = 0_u8;
 	} else {
 		count -= decrease;
 		if let Err(e) = write(&path, count.to_string()) {
@@ -165,12 +167,9 @@ pub fn list() {
 		let mut item_vec: Vec<(String, u8)> = Vec::new();
 		for i in items {
 			if let Ok(entry) = i {
-				let item = entry.path();
-				let dir = format!("{}/", &path.display().to_string()).to_string();
-				item_vec.push((
-					item.display().to_string().replace(&dir, ""),
-					read_n(&item.display().to_string()),
-				));
+				let item = entry.path().display().to_string();
+				let file = entry.file_name().to_string_lossy().into_owned();
+				item_vec.push((file, read_n(&item)));
 			}
 		}
 		item_vec.sort_by(|a, b| a.0.cmp(&b.0));
@@ -184,7 +183,7 @@ pub fn list() {
 	}
 }
 ```
-# `src/game/mod.rs`
+## `src/game/mod.rs`
 ```rs
 mod inventory;
 use {
@@ -214,10 +213,10 @@ use {
 pub fn quit() {
 	if remove_dir_all(ROOT).is_ok() {
 		println!("You escaped the dungeon before it collapsed!");
-		exit(0);
+		exit(0_i32);
 	} else {
 		eprintln!("The dungeon collapsed with you inside...");
-		exit(1)
+		exit(1_i32)
 	}
 }
 pub fn inventory(command: Inventory) {
@@ -229,26 +228,33 @@ pub fn inventory(command: Inventory) {
 	}
 }
 ```
-# `src/lib.rs`
+## `src/lib.rs`
 ```rs
 pub mod cli;
 pub mod game;
-use std::fs::read_to_string;
+use {
+	regex::Regex,
+	std::fs::read_to_string,
+};
 pub const ROOT: &str = "dungeon";
-pub const MAX: u8 = 64;
+pub const MAX: u8 = 1_u8 << 6_u8;
 pub fn read_n(path: &str) -> u8 {
 	if let Some(str) = read_to_string(&path).ok() {
 		if let Some(n) = str.parse::<u8>().ok() {
 			return n;
 		}
 	}
-	0
+	0_u8
 }
 pub fn cleanse(input: String) -> String {
-	input.replace("/", "_").replace(".", "_")
+	Regex::new(r"[/.\s]")
+		.unwrap()
+		.replace_all(input.as_str(), "_")
+		.to_string()
+		.to_lowercase()
 }
 ```
-# `src/main.rs`
+## `src/main.rs`
 ```rs
 use {
 	clap_repl::{
@@ -289,8 +295,11 @@ fn main() {
 		.with_prompt(Box::new(prompt))
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
-				FileBackedHistory::with_file(10000, "/tmp/rust-dungeon-crawler-history".into())
-					.unwrap(),
+				FileBackedHistory::with_file(
+					10000_usize,
+					"/tmp/rust-dungeon-crawler-history".into(),
+				)
+				.unwrap(),
 			))
 		})
 		.build();
@@ -300,7 +309,7 @@ fn main() {
 	});
 }
 ```
-# `TODO.md`
+## `TODO.md`
 ```md
-- [ ] use `RON` for state instead of files (à la Unix)
+- [ ] Instead of files (à la Unix), use `RON` for state
 ```

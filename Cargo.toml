@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 clap = "4.5.57"
 clap-repl = "0.3.2"
+regex = "1.12.3"
