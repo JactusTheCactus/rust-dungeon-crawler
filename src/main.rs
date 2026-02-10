@@ -11,29 +11,23 @@ use {
 		ROOT,
 		cli::{
 			cli::Cli,
-			cmd::Command::{
-				Inventory,
-				Quit,
-			},
+			cmd::Command,
 		},
-		game::{
-			inventory,
-			quit,
-		},
+		game,
 	},
 	std::fs::create_dir_all,
 };
 fn main() {
 	for dir in [".state/items"] {
-		if let Err(e) = create_dir_all(format!("{ROOT}/{dir}")) {
+		if let Err(e) = create_dir_all(format!("{}/{dir}", ROOT)) {
 			eprintln!("Failed to create directory: {e}")
 		}
 	}
 	ClapEditor::<Cli>::builder()
-		.with_prompt(Box::new(DefaultPrompt {
-			left_prompt: Basic("Dungeon".to_string()),
-			..DefaultPrompt::default()
-		}))
+		.with_prompt(Box::new(DefaultPrompt::new(
+			Basic("Dungeon".to_string()),
+			DefaultPrompt::default().right_prompt,
+		)))
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
 				FileBackedHistory::with_file(
@@ -44,8 +38,8 @@ fn main() {
 			))
 		})
 		.build()
-		.repl(|cmd: Cli| match cmd.command {
-			Inventory(command) => inventory(command),
-			Quit => quit(),
+		.repl(|cmd| match cmd.command {
+			Command::Inventory(command) => game::inventory(command),
+			Command::Quit => game::quit(),
 		});
 }

@@ -1,28 +1,14 @@
-mod inv;
 use {
 	crate::{
 		ROOT,
-		cli::inv::{
-			InvCmd,
-			InvCmd::{
-				Add,
-				Check,
-				Drop,
-				List,
-			},
-		},
-		game::inv::{
-			add,
-			check,
-			drop,
-			list,
-		},
+		cli::inv::InvCmd,
 	},
 	std::{
 		fs::remove_dir_all,
 		process::exit,
 	},
 };
+mod inv;
 pub fn quit() {
 	if remove_dir_all(ROOT).is_ok() {
 		println!("You escaped the dungeon before it collapsed!");
@@ -34,9 +20,9 @@ pub fn quit() {
 }
 pub fn inventory(command: InvCmd) {
 	match command {
-		Add { item, increase } => add(item, increase),
-		Check { item, target } => check(item, target),
-		Drop { item, decrease } => drop(item, decrease),
-		List => list(),
+		InvCmd::Add { item, increase } => inv::add(item, increase),
+		InvCmd::Check { item, target } => inv::check(&item, target),
+		InvCmd::Drop { item, decrease } => inv::drop(&item, decrease),
+		InvCmd::List => inv::list(),
 	}
 }
