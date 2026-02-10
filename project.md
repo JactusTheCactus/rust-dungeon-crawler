@@ -8,7 +8,11 @@
 │   │   ├── inventory.rs
 │   │   └── mod.rs
 │   ├── game/
-│   │   ├── inventory.rs
+│   │   ├── inventory/
+│   │   │   ├── store/
+│   │   │   │   ├── func.rs
+│   │   │   │   └── mod.rs
+│   │   │   └── mod.rs
 │   │   └── mod.rs
 │   ├── lib.rs
 │   └── main.rs
@@ -94,15 +98,83 @@ pub enum Inventory {
 ```rs
 pub mod cli;
 pub mod command;
-pub mod inventory;
+pub(super) mod inventory;
 ```
-## `src/game/inventory.rs`
+## `src/game/inventory/mod.rs`
+```rs
+mod store;
+use crate::{
+	cleanse,
+	game::inventory::store::{
+		InventoryStore,
+		Item,
+		get_item_path,
+	},
+	read_n,
+};
+pub(super) fn add(mut item: String, increase: u8) {
+	let max: u8 = 1 << 6;
+	item = cleanse(item);
+	let path = get_item_path(&item);
+	let mut count: u8 = read_n(&path);
+	let old = count;
+	count = (old + increase).min(max);
+	if old == max {
+		println!("This slot is full");
+	} else if count == max {
+		println!("This slot is now full");
+	}
+	InventoryStore {}.set(&item, count);
+	println!("{item}×{count}");
+}
+pub(super) fn check(item: String, target: u8) {
+	let Item { id, count, path: _ } = InventoryStore {}.get(item);
+	if count >= target {
+		println!("You have {id}×{target} ({count})");
+	} else {
+		println!("You do not have {id}×{target} ({count})");
+	}
+}
+pub(super) fn drop(item: String, decrease: u8) {
+	let inv = InventoryStore {};
+	let Item {
+		id,
+		mut count,
+		path: _,
+	} = inv.get(item.clone());
+	if count == 0_u8 {
+		println!("You have nothing to drop");
+	} else if count <= decrease {
+		inv.remove(item);
+		count = 0_u8;
+	} else {
+		count -= decrease;
+		inv.set(&id, count);
+	}
+	println!("{id}×{count}");
+}
+pub(super) fn list() {
+	let item_vec = InventoryStore {}.list();
+	if item_vec.is_empty() {
+		println!("Your inventory is empty...")
+	} else {
+		for (item, count) in item_vec {
+			println!("{item}×{count}");
+		}
+	}
+}
+```
+## `src/game/inventory/store/func.rs`
 ```rs
 use {
 	crate::{
-		MAX,
 		ROOT,
 		cleanse,
+		game::inventory::store::{
+			InventoryStore,
+			Item,
+			get_item_path,
+		},
 		read_n,
 	},
 	std::{
@@ -114,72 +186,91 @@ use {
 		path::Path,
 	},
 };
-pub fn add(mut item: String, increase: u8) {
+pub(super) fn get(mut item: String) -> Item {
 	item = cleanse(item);
-	let path = Path::new(ROOT).join(".state/items").join(&item);
-	let mut count = read_n(&path.display().to_string());
-	count += increase;
-	if count >= MAX {
-		if count == MAX {
-			println!("This slot is full");
-		} else {
-			println!("This slot is now full");
-		}
-		count = MAX;
-	}
+	let path = &Path::new(ROOT)
+		.join(".state")
+		.join("items")
+		.join(&cleanse(item.to_string()));
+	let count = read_n(path);
+	return Item {
+		id: item.to_string(),
+		count: count,
+		path: path.to_path_buf(),
+	};
+}
+pub(super) fn set(item: &String, count: u8) {
+	let path = get_item_path(&item);
 	if let Err(e) = write(&path, count.to_string()) {
 		eprintln!("Failed to write to file: {e}");
 	}
-	println!("{item}×{count}");
 }
-pub fn check(mut item: String, target: u8) {
-	item = cleanse(item);
-	let path = Path::new(ROOT).join(".state/items").join(&item);
-	let count = read_n(&path.display().to_string());
-	if count >= target {
-		println!("You have {item}×{target} ({count})");
-	} else {
-		println!("You do not have {item}×{target} ({count})");
+pub(super) fn remove(item: String) {
+	let Item {
+		id: _,
+		count: _,
+		path,
+	} = InventoryStore {}.get(item);
+	if let Err(e) = remove_file(&path) {
+		eprintln!("Failed to remove file: {e}")
 	}
 }
-pub fn drop(mut item: String, decrease: u8) {
-	item = cleanse(item);
-	let path = Path::new(ROOT).join(".state/items").join(&item);
-	let mut count = read_n(&path.display().to_string());
-	if count == 0_u8 {
-		println!("You have nothing to drop");
-	} else if count <= decrease {
-		if let Err(e) = remove_file(&path) {
-			eprintln!("Failed to remove file: {e}")
-		}
-		count = 0_u8;
-	} else {
-		count -= decrease;
-		if let Err(e) = write(&path, count.to_string()) {
-			eprintln!("Failed to write to file: {e}");
-		}
-	}
-	println!("{item}×{count}");
-}
-pub fn list() {
-	let path = Path::new(ROOT).join(".state/items");
+pub(super) fn list() -> Vec<(String, u8)> {
+	let path = Path::new(ROOT).join(".state").join("items");
+	let mut item_vec: Vec<(String, u8)> = Vec::new();
 	if let Ok(items) = read_dir(&path) {
-		let mut item_vec: Vec<(String, u8)> = Vec::new();
 		for i in items {
 			if let Ok(entry) = i {
-				let item = entry.path().display().to_string();
-				let file = entry.file_name().to_string_lossy().into_owned();
-				item_vec.push((file, read_n(&item)));
+				item_vec.push((
+					entry.file_name().to_string_lossy().into_owned(),
+					read_n(&entry.path()),
+				));
 			}
 		}
-		item_vec.sort_by(|a, b| a.0.cmp(&b.0));
-		if item_vec.is_empty() {
-			println!("Your inventory is empty...")
-		} else {
-			for (item, count) in item_vec {
-				println!("{item}×{count}");
-			}
-		}
+		item_vec.sort_by(|(a, _), (b, _)| a.cmp(&b));
+	}
+	item_vec
+}
+```
+## `src/game/inventory/store/mod.rs`
+```rs
+mod func;
+use {
+	crate::{
+		ROOT,
+		game::inventory::store::func::{
+			get,
+			list,
+			remove,
+			set,
+		},
+	},
+	std::path::{
+		Path,
+		PathBuf,
+	},
+};
+pub(super) fn get_item_path(item: &String) -> PathBuf {
+	Path::new(ROOT).join(".state/items").join(&item)
+}
+pub(super) struct Item {
+	pub(super) id: String,
+	pub(super) count: u8,
+	pub(super) path: PathBuf,
+}
+pub(super) struct InventoryStore {}
+impl InventoryStore {
+	pub(super) fn get(&self, item: String) -> Item {
+		get(item)
+	}
+	pub(super) fn set(&self, item: &String, count: u8) {
+		set(item, count)
+	}
+	pub(super) fn remove(&self, item: String) {
+		remove(item)
+	}
+	pub(super) fn list(&self) -> Vec<(String, u8)> {
+		list()
 	}
 }
 ```
@@ -233,22 +324,23 @@ pub fn inventory(command: Inventory) {
 pub mod cli;
 pub mod game;
 use {
+	once_cell::sync::Lazy,
 	regex::Regex,
-	std::fs::read_to_string,
+	std::{
+		fs::read_to_string,
+		path::Path,
+	},
 };
 pub const ROOT: &str = "dungeon";
-pub const MAX: u8 = 1_u8 << 6_u8;
-pub fn read_n(path: &str) -> u8 {
-	if let Some(str) = read_to_string(&path).ok() {
-		if let Some(n) = str.parse::<u8>().ok() {
-			return n;
-		}
-	}
-	0_u8
+pub(crate) fn read_n(path: &Path) -> u8 {
+	read_to_string(path)
+		.ok()
+		.and_then(|s| s.parse().ok())
+		.unwrap_or(0)
 }
-pub fn cleanse(input: String) -> String {
-	Regex::new(r"[/.\s]")
-		.unwrap()
+static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[/.\s]").unwrap());
+pub(crate) fn cleanse(input: String) -> String {
+	CLEANSE_RE
 		.replace_all(input.as_str(), "_")
 		.to_string()
 		.to_lowercase()
@@ -287,12 +379,11 @@ fn main() {
 			eprintln!("Failed to create directory: {e}")
 		}
 	}
-	let prompt = DefaultPrompt {
-		left_prompt: Basic("Dungeon".to_string()),
-		..DefaultPrompt::default()
-	};
-	let rl = ClapEditor::<Cli>::builder()
-		.with_prompt(Box::new(prompt))
+	ClapEditor::<Cli>::builder()
+		.with_prompt(Box::new(DefaultPrompt {
+			left_prompt: Basic("Dungeon".to_string()),
+			..DefaultPrompt::default()
+		}))
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
 				FileBackedHistory::with_file(
@@ -302,14 +393,14 @@ fn main() {
 				.unwrap(),
 			))
 		})
-		.build();
-	rl.repl(|cmd| match cmd.command {
-		Inventory(command) => inventory(command),
-		Quit => quit(),
-	});
+		.build()
+		.repl(|cmd| match cmd.command {
+			Inventory(command) => inventory(command),
+			Quit => quit(),
+		});
 }
 ```
 ## `TODO.md`
 ```md
-- [ ] Instead of files (à la Unix), use `RON` for state
+- Instead of files (à la Unix), use `RON` for state
 ```

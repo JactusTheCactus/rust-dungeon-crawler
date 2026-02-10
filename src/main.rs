@@ -29,12 +29,11 @@ fn main() {
 			eprintln!("Failed to create directory: {e}")
 		}
 	}
-	let prompt = DefaultPrompt {
-		left_prompt: Basic("Dungeon".to_string()),
-		..DefaultPrompt::default()
-	};
-	let rl = ClapEditor::<Cli>::builder()
-		.with_prompt(Box::new(prompt))
+	ClapEditor::<Cli>::builder()
+		.with_prompt(Box::new(DefaultPrompt {
+			left_prompt: Basic("Dungeon".to_string()),
+			..DefaultPrompt::default()
+		}))
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
 				FileBackedHistory::with_file(
@@ -44,9 +43,9 @@ fn main() {
 				.unwrap(),
 			))
 		})
-		.build();
-	rl.repl(|cmd| match cmd.command {
-		Inventory(command) => inventory(command),
-		Quit => quit(),
-	});
+		.build()
+		.repl(|cmd| match cmd.command {
+			Inventory(command) => inventory(command),
+			Quit => quit(),
+		});
 }

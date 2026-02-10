@@ -1,1 +1,1 @@
-- [ ] Instead of files (à la Unix), use `RON` for state
+- Instead of files (à la Unix), use `RON` for state

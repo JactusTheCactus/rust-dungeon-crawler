@@ -1,22 +1,23 @@
 pub mod cli;
 pub mod game;
 use {
+	once_cell::sync::Lazy,
 	regex::Regex,
-	std::fs::read_to_string,
+	std::{
+		fs::read_to_string,
+		path::Path,
+	},
 };
 pub const ROOT: &str = "dungeon";
-pub const MAX: u8 = 1_u8 << 6_u8;
-pub fn read_n(path: &str) -> u8 {
-	if let Some(str) = read_to_string(&path).ok() {
-		if let Some(n) = str.parse::<u8>().ok() {
-			return n;
-		}
-	}
-	0_u8
+pub(crate) fn read_n(path: &Path) -> u8 {
+	read_to_string(path)
+		.ok()
+		.and_then(|s| s.parse().ok())
+		.unwrap_or(0)
 }
-pub fn cleanse(input: String) -> String {
-	Regex::new(r"[/.\s]")
-		.unwrap()
+static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[/.\s]").unwrap());
+pub(crate) fn cleanse(input: String) -> String {
+	CLEANSE_RE
 		.replace_all(input.as_str(), "_")
 		.to_string()
 		.to_lowercase()
