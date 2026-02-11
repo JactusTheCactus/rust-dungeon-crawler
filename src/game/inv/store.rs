@@ -19,7 +19,7 @@ pub(super) fn get_item_path(item: &str) -> PathBuf {
 	Path::new(crate::ROOT)
 		.join(".state")
 		.join("items")
-		.join(&crate::cleanse(item))
+		.join(&cleanse(item))
 }
 pub(super) struct Item {
 	pub(super) id: String,
