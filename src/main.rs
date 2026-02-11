@@ -10,16 +10,19 @@ use {
 	rust_dungeon_crawler::{
 		ROOT,
 		cli::{
-			cli::Cli,
-			cmd::Command,
+			Cli,
+			Command,
 		},
 		game,
 	},
-	std::fs::create_dir_all,
+	std::{
+		fs::create_dir_all,
+		path::Path,
+	},
 };
 fn main() {
-	for dir in [".state/items"] {
-		if let Err(e) = create_dir_all(format!("{}/{dir}", ROOT)) {
+	for dir in [Path::new(".state").join("items")] {
+		if let Err(e) = create_dir_all(Path::new(ROOT).join(dir)) {
 			eprintln!("Failed to create directory: {e}")
 		}
 	}
@@ -31,7 +34,7 @@ fn main() {
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
 				FileBackedHistory::with_file(
-					10000_usize,
+					1_usize << 14_u8,
 					"/tmp/rust-dungeon-crawler-history".into(),
 				)
 				.unwrap(),

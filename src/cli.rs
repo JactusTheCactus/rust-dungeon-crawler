@@ -1,7 +1,27 @@
 use clap::{
+	Parser,
 	Subcommand,
 	value_parser,
 };
+#[derive(Subcommand)]
+/// Commands
+pub enum Command {
+	#[command(subcommand)]
+	#[command(alias = "i")]
+	/// Inventory commands
+	Inventory(InvCmd),
+	#[command(alias = "q")]
+	/// Leave the dungeon
+	Quit,
+}
+#[derive(Parser)]
+#[command(name = "")]
+/// Player commands
+pub struct Cli {
+	#[command(subcommand)]
+	/// A command
+	pub command: Command,
+}
 #[derive(Subcommand)]
 pub enum InvCmd {
 	/// Add items to your inventory,

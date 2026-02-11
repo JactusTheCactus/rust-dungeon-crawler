@@ -1,7 +1,8 @@
 use {
 	crate::{
 		ROOT,
-		cli::inv::InvCmd,
+		cleanse,
+		cli::InvCmd,
 	},
 	std::{
 		fs::remove_dir_all,
@@ -20,9 +21,9 @@ pub fn quit() {
 }
 pub fn inventory(command: InvCmd) {
 	match command {
-		InvCmd::Add { item, increase } => inv::add(item, increase),
-		InvCmd::Check { item, target } => inv::check(&item, target),
-		InvCmd::Drop { item, decrease } => inv::drop(&item, decrease),
+		InvCmd::Add { item, increase } => inv::add(cleanse(&item), increase),
+		InvCmd::Check { item, target } => inv::check(&cleanse(&item), target),
+		InvCmd::Drop { item, decrease } => inv::drop(&cleanse(&item), decrease),
 		InvCmd::List => inv::list(),
 	}
 }

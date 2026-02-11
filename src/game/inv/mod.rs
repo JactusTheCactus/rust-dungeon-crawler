@@ -1,18 +1,16 @@
 use crate::{
 	ROOT,
-	cleanse,
 	game::inv::store::{
 		InventoryStore,
 		Item,
-		get_item_path,
 	},
-	read_n,
 };
 mod store;
-pub(super) fn add(mut item: String, increase: u8) {
-	let max = 1 << 6;
-	let path = get_item_path(&item);
-	let mut count = read_n(&path);
+pub(super) fn add(item: String, increase: u8) {
+	let inv = InventoryStore::new(ROOT);
+	let max = 1_u8 << 6_u8;
+	let path = inv.item_path(&item);
+	let mut count = inv.read_n(&path);
 	let old = count;
 	count = (old + increase).min(max);
 	if old == max {
@@ -20,8 +18,7 @@ pub(super) fn add(mut item: String, increase: u8) {
 	} else if count == max {
 		println!("This slot is now full");
 	}
-	item = cleanse(&item);
-	InventoryStore::new(ROOT).set(&item, count);
+	inv.set(&item, count);
 	println!("{item}×{count}");
 }
 pub(super) fn check(item: &str, target: u8) {

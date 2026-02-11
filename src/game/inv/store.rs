@@ -1,26 +1,15 @@
-use {
-	crate::{
-		cleanse,
-		read_n,
+use std::{
+	fs::{
+		read_dir,
+		read_to_string,
+		remove_file,
+		write,
 	},
-	std::{
-		fs::{
-			read_dir,
-			remove_file,
-			write,
-		},
-		path::{
-			Path,
-			PathBuf,
-		},
+	path::{
+		Path,
+		PathBuf,
 	},
 };
-pub(super) fn get_item_path(item: &str) -> PathBuf {
-	Path::new(crate::ROOT)
-		.join(".state")
-		.join("items")
-		.join(&cleanse(item))
-}
 pub(super) struct Item {
 	pub(super) id: String,
 	pub(super) count: u8,
@@ -33,17 +22,29 @@ impl InventoryStore {
 	pub fn new(root: impl Into<PathBuf>) -> Self {
 		Self { root: root.into() }
 	}
+	pub(super) fn item_path(&self, item: &str) -> PathBuf {
+		Path::new(&self.root)
+			.join(".state")
+			.join("items")
+			.join(&item)
+	}
+	pub(crate) fn read_n(&self, path: &Path) -> u8 {
+		read_to_string(path)
+			.ok()
+			.and_then(|s| s.parse().ok())
+			.unwrap_or(0)
+	}
 	pub(super) fn get(&self, item: &str) -> Item {
-		let path = get_item_path(&item);
-		let count = read_n(&path);
-		return Item {
-			id: cleanse(item),
+		let path = self.item_path(&item);
+		let count = self.read_n(&path);
+		Item {
+			id: item.to_string(),
 			count,
 			path,
-		};
+		}
 	}
 	pub(super) fn set(&self, item: &str, count: u8) {
-		if let Err(e) = write(&get_item_path(&item), count.to_string()) {
+		if let Err(e) = write(&self.item_path(&item), count.to_string()) {
 			eprintln!("Failed to write to file: {e}");
 		}
 	}
@@ -65,7 +66,7 @@ impl InventoryStore {
 				if let Ok(entry) = i {
 					item_vec.push((
 						entry.file_name().to_string_lossy().into_owned(),
-						read_n(&entry.path()),
+						self.read_n(&entry.path()),
 					));
 				}
 			}

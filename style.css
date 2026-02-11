@@ -1,0 +1,1 @@
+@import"https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap";body{font:20pt "Noto Sans"}code,h3{font-family:"Fira Code"}h3::before{content:"./"}#ron h3::after{content:".ron"}

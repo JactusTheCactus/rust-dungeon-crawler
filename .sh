@@ -27,4 +27,16 @@ if [[ -n $log ]]
 	then main &> "logs/$log"
 	else main
 fi
+while read -r pug; do
+	pug3 "$pug"
+	perl -pgi -e '
+		s|\n|&#xd;|g;
+		s|\t|&#x9;|g;
+	' "${pug%.pug}.html"
+done < <(find . -name \*.pug)
+while read -r scss
+	do sass "$scss" "${scss%.scss}.css" \
+		--no-source-map \
+		--style=compressed
+done < <(find . -name \*.scss)
 find . -empty ! -path './target/*' -delete

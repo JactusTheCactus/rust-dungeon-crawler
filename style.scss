@@ -1,0 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+body {
+	font: 20pt "Noto Sans";
+}
+code {
+	font-family: "Fira Code";
+}
+h3 {
+	@extend code;
+	&::before {
+		content: "./";
+	}
+	#ron & {
+		&::after {
+			content: ".ron";
+		}
+		// pre code { highlighting; }
+	}
+}

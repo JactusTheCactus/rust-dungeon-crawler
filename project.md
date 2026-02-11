@@ -1,41 +1,21 @@
 # Thoughts?
 ```tree
-./
-├── src/
-│   ├── cli/
-│   │   ├── cli.rs
-│   │   ├── cmd.rs
-│   │   ├── inv.rs
-│   │   └── mod.rs
-│   ├── game/
-│   │   ├── inv/
-│   │   │   ├── mod.rs
-│   │   │   └── store.rs
-│   │   └── mod.rs
-│   ├── lib.rs
-│   └── main.rs
-└── TODO.md
+src/
+├── game/
+│   ├── inv/
+│   │   ├── mod.rs
+│   │   └── store.rs
+│   └── mod.rs
+├── cli.rs
+├── lib.rs
+└── main.rs
 ```
-## `src/cli/cli.rs`
+## `cli.rs`
 ```rs
-use {
-	crate::cli::cmd::Command,
-	clap::Parser,
-};
-#[derive(Parser)]
-#[command(name = "")]
-/// Player commands
-pub struct Cli {
-	#[command(subcommand)]
-	/// A command
-	pub command: Command,
-}
-```
-## `src/cli/cmd.rs`
-```rs
-use {
-	crate::cli::inv::InvCmd,
-	clap::Subcommand,
+use clap::{
+	Parser,
+	Subcommand,
+	value_parser,
 };
 #[derive(Subcommand)]
 /// Commands
@@ -48,13 +28,14 @@ pub enum Command {
 	/// Leave the dungeon
 	Quit,
 }
-```
-## `src/cli/inv.rs`
-```rs
-use clap::{
-	Subcommand,
-	value_parser,
-};
+#[derive(Parser)]
+#[command(name = "")]
+/// Player commands
+pub struct Cli {
+	#[command(subcommand)]
+	/// A command
+	pub command: Command,
+}
 #[derive(Subcommand)]
 pub enum InvCmd {
 	/// Add items to your inventory,
@@ -95,29 +76,21 @@ pub enum InvCmd {
 	List,
 }
 ```
-## `src/cli/mod.rs`
-```rs
-pub mod cli;
-pub mod cmd;
-pub(super) mod inv;
-```
-## `src/game/inv/mod.rs`
+## `game/inv/mod.rs`
 ```rs
 use crate::{
 	ROOT,
-	cleanse,
 	game::inv::store::{
 		InventoryStore,
 		Item,
-		get_item_path,
 	},
-	read_n,
 };
 mod store;
-pub(super) fn add(mut item: String, increase: u8) {
-	let max = 1 << 6;
-	let path = get_item_path(&item);
-	let mut count = read_n(&path);
+pub(super) fn add(item: String, increase: u8) {
+	let inv = InventoryStore::new(ROOT);
+	let max = 1_u8 << 6_u8;
+	let path = inv.item_path(&item);
+	let mut count = inv.read_n(&path);
 	let old = count;
 	count = (old + increase).min(max);
 	if old == max {
@@ -125,8 +98,7 @@ pub(super) fn add(mut item: String, increase: u8) {
 	} else if count == max {
 		println!("This slot is now full");
 	}
-	item = cleanse(&item);
-	InventoryStore::new(ROOT).set(&item, count);
+	inv.set(&item, count);
 	println!("{item}×{count}");
 }
 pub(super) fn check(item: &str, target: u8) {
@@ -166,31 +138,20 @@ pub(super) fn list() {
 	}
 }
 ```
-## `src/game/inv/store.rs`
+## `game/inv/store.rs`
 ```rs
-use {
-	crate::{
-		cleanse,
-		read_n,
+use std::{
+	fs::{
+		read_dir,
+		read_to_string,
+		remove_file,
+		write,
 	},
-	std::{
-		fs::{
-			read_dir,
-			remove_file,
-			write,
-		},
-		path::{
-			Path,
-			PathBuf,
-		},
+	path::{
+		Path,
+		PathBuf,
 	},
 };
-pub(super) fn get_item_path(item: &str) -> PathBuf {
-	Path::new(crate::ROOT)
-		.join(".state")
-		.join("items")
-		.join(&cleanse(item))
-}
 pub(super) struct Item {
 	pub(super) id: String,
 	pub(super) count: u8,
@@ -203,17 +164,29 @@ impl InventoryStore {
 	pub fn new(root: impl Into<PathBuf>) -> Self {
 		Self { root: root.into() }
 	}
+	pub(super) fn item_path(&self, item: &str) -> PathBuf {
+		Path::new(&self.root)
+			.join(".state")
+			.join("items")
+			.join(&item)
+	}
+	pub(crate) fn read_n(&self, path: &Path) -> u8 {
+		read_to_string(path)
+			.ok()
+			.and_then(|s| s.parse().ok())
+			.unwrap_or(0)
+	}
 	pub(super) fn get(&self, item: &str) -> Item {
-		let path = get_item_path(&item);
-		let count = read_n(&path);
-		return Item {
-			id: cleanse(item),
+		let path = self.item_path(&item);
+		let count = self.read_n(&path);
+		Item {
+			id: item.to_string(),
 			count,
 			path,
-		};
+		}
 	}
 	pub(super) fn set(&self, item: &str, count: u8) {
-		if let Err(e) = write(&get_item_path(&item), count.to_string()) {
+		if let Err(e) = write(&self.item_path(&item), count.to_string()) {
 			eprintln!("Failed to write to file: {e}");
 		}
 	}
@@ -235,7 +208,7 @@ impl InventoryStore {
 				if let Ok(entry) = i {
 					item_vec.push((
 						entry.file_name().to_string_lossy().into_owned(),
-						read_n(&entry.path()),
+						self.read_n(&entry.path()),
 					));
 				}
 			}
@@ -245,12 +218,13 @@ impl InventoryStore {
 	}
 }
 ```
-## `src/game/mod.rs`
+## `game/mod.rs`
 ```rs
 use {
 	crate::{
 		ROOT,
-		cli::inv::InvCmd,
+		cleanse,
+		cli::InvCmd,
 	},
 	std::{
 		fs::remove_dir_all,
@@ -269,35 +243,28 @@ pub fn quit() {
 }
 pub fn inventory(command: InvCmd) {
 	match command {
-		InvCmd::Add { item, increase } => inv::add(item, increase),
-		InvCmd::Check { item, target } => inv::check(&item, target),
-		InvCmd::Drop { item, decrease } => inv::drop(&item, decrease),
+		InvCmd::Add { item, increase } => inv::add(cleanse(&item), increase),
+		InvCmd::Check { item, target } => inv::check(&cleanse(&item), target),
+		InvCmd::Drop { item, decrease } => inv::drop(&cleanse(&item), decrease),
 		InvCmd::List => inv::list(),
 	}
 }
 ```
-## `src/lib.rs`
+## `lib.rs`
 ```rs
 use {
 	once_cell::sync::Lazy,
 	regex::Regex,
-	std::path::Path,
 };
 pub mod cli;
 pub mod game;
 pub const ROOT: &str = "dungeon";
-pub(crate) fn read_n(path: &Path) -> u8 {
-	std::fs::read_to_string(path)
-		.ok()
-		.and_then(|s| s.parse().ok())
-		.unwrap_or(0)
-}
-static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[/.\s]").unwrap());
+static CLEANSE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[^\w-]").unwrap());
 pub(crate) fn cleanse(input: &str) -> String {
 	CLEANSE_RE.replace_all(input, "_").to_lowercase()
 }
 ```
-## `src/main.rs`
+## `main.rs`
 ```rs
 use {
 	clap_repl::{
@@ -311,16 +278,19 @@ use {
 	rust_dungeon_crawler::{
 		ROOT,
 		cli::{
-			cli::Cli,
-			cmd::Command,
+			Cli,
+			Command,
 		},
 		game,
 	},
-	std::fs::create_dir_all,
+	std::{
+		fs::create_dir_all,
+		path::Path,
+	},
 };
 fn main() {
-	for dir in [".state/items"] {
-		if let Err(e) = create_dir_all(format!("{}/{dir}", ROOT)) {
+	for dir in [Path::new(".state").join("items")] {
+		if let Err(e) = create_dir_all(Path::new(ROOT).join(dir)) {
 			eprintln!("Failed to create directory: {e}")
 		}
 	}
@@ -332,7 +302,7 @@ fn main() {
 		.with_editor_hook(|reed| {
 			reed.with_history(Box::new(
 				FileBackedHistory::with_file(
-					10000_usize,
+					1_usize << 14_u8,
 					"/tmp/rust-dungeon-crawler-history".into(),
 				)
 				.unwrap(),
@@ -344,39 +314,4 @@ fn main() {
 			Command::Quit => game::quit(),
 		});
 }
-```
-## `TODO.md`
-```md
-# Use Ron for state
-1 Ron struct file per-file (à la Unix) for metadata, instead of raw text for item count. e.g.:
-## Raw
-### ./bow
-```txt
-1
-```
-### ./arrow
-```txt
-50
-```
-## Ron
-### ./bow.ron
-```rs
-Item(
-	name: "Bow",
-	description: "Slay your enemies from afar!",
-	effects: ["triple"],
-	count: 1_u8,
-	max_shift: 4_u8,
-)
-```
-### ./arrow.ron
-```rs
-Item(
-	name: "Arrow",
-	description: "Pointy!",
-	effects: ["flame"],
-	count: 50_u8,
-	max_shift: 6_u8,
-)
-```
 ```

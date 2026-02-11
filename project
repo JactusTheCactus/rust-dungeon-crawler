@@ -1,31 +1,8 @@
 #!/usr/bin/env bash
 exec > project.md
-printf '# %s\n' \
-	"Thoughts?"
 # shellcheck disable=SC2016
-printf '```tree\n%s\n```\n' \
-	"$(tree \
-		--dirsfirst \
-		--noreport \
-		-P \*.rs -I target \
-		-P \*.md -I project.md \
-		-F
-	)"
+printf '# Thoughts?\n```tree\n%s\n```\n' "$(tree src --dirsfirst --noreport -F)"
 while read -r f; do
-	name=${f#./}
-	ext=${f##*.}
-	content=$(<"$f")
 	# shellcheck disable=SC2016
-	printf '## `%s`\n```%s\n%s\n```\n' \
-		"$name" \
-		"$ext" \
-		"$content"
-done < <(find . -type f \( \
-	\( \
-		-name \*.rs \
-		! -path ./target/\* \
-	\) \
-	-o \( \
-		-name \*.md ! -name project.md \
-	\) \
-\) | sort)
+	printf '## `%s`\n```%s\n%s\n```\n' "${f#src/}" "${f##*.}" "$(<"$f")"
+done < <(find src -type f | sort)

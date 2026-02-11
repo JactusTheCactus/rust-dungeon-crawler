@@ -1,0 +1,45 @@
+mixin raw(name="", count=0)
+	div
+		h3= name.toLowerCase()
+		pre: code.txt= count
+mixin rust(n="", d="", e=[], c=0, s=0)
+	-
+		obj = `Item(\n${Object.entries({
+			name: `"${n}"`,
+			description: `"${d}"`,
+			effects: `[\n\t\t${e.map(i => `"${i}"`).join(",\n\t\t")}\n\t]`,
+			count: `${c}_u8`,
+			max_shift: `${s}_u8`
+		}).map(([k,v]) => `\t${k}: ${v}`).join(",\n")}\n)`
+	div
+		h3= n.toLowerCase()
+		pre: code.language-rs= obj
+doctype html
+html(lang="en")
+	head
+		link(
+			rel="stylesheet"
+			href="style.css"
+		)
+		link(
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+		)
+		for i in ["highlight","languages/go"]
+			script(src=`https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/${i}.min.js`)
+		script hljs.highlightAll()
+	body
+		h1 Use Ron for state
+		p 1 Ron struct file per-file (à la Unix) for metadata, instead of raw text for item count. e.g:
+		#raw
+			h2 Raw
+			+raw("Bow", 1)
+			+raw("Arrow", 50)
+		#ron
+			h2 Ron
+			+rust("Bow",
+				"Slay your enemies from afar!",
+				["triple"], 1, 4)
+			+rust("Arrow",
+				"Pointy!",
+				["flame"], 50, 6)
